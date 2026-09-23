@@ -7,7 +7,7 @@ The only supported application server is `backend/src/server.js` (Express + Java
 `ai/` has **not been deleted**. It is now a migration reference, with its startup/build/SQL-migration commands disabled to prevent accidentally reviving a second backend. No backend/frontend runtime imports it. Existing legacy SQL tables, if any, were not altered or dropped. Legacy conversations/files were not automatically imported because the old identity model is not compatible with authenticated backend ownership.
 
 ```text
-frontend/                         existing React application, unchanged by this refactor
+frontend/                         React application with integrated AssistantWidget
 backend/
   prisma/schema.prisma            only Prisma schema; two assistant-only models added
   src/modules/assistant/
@@ -24,6 +24,18 @@ backend/
     files/                        internal, bounded document-processing foundation
 ai/                               retained legacy reference, not a supported server
 ```
+
+## Frontend connection (follow-up)
+
+The former static consultant placeholder is now `frontend/src/components/assistant/AssistantWidget.tsx`, mounted in the existing main layout. `frontend/src/api/assistant.api.ts` calls `/assistant/chat` through the same Axios client as catalog/cart/auth. Its base URL remains `VITE_API_URL=http://localhost:3000/api`; no frontend runtime imports `ai/`, contacts port 3001, or receives an AI credential.
+
+The client normalizes backend product/price/stock DTOs through the existing normalizers and renders messages as plain text. Certificate URLs use the existing HTTP(S)-only asset resolver. The widget sends city slugs and reuses the shared guest UUID/JWT/language headers. Selecting a catalog result explicitly sends its product UUID; free-text follow-ups use server conversation context.
+
+A cart request only creates a pending proposal. Confirm buttons and manually typed exact confirmation send the current `pendingActionId`; no direct cart-add API is called by the widget. Expired/hidden proposals cannot be confirmed from the UI. Another message retires old controls; city/account changes clear local state, abort transport and ignore late replies. Aborting transport does not undo an already accepted server operation. Confirmation failures are not automatically retried; the user is directed to inspect the cart. Successful cart replies refresh the existing shared cart state.
+
+Visible history is memory-only and retained while navigating the same layout or closing/reopening the panel. Reloading clears visible history, not the server conversation context; no history-fetch endpoint was added. Local pending controls are deliberately not restored from browser storage. File upload remains unavailable.
+
+Frontend checks: `npm run build`, `npm run check:assistant` (isolated real React/API transport tests), and `npm run check:assistant:integration` (real HTTP against the running main backend using disposable fixture data only).
 
 ## Inspected and migrated
 

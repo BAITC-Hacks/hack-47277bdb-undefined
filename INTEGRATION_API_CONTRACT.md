@@ -2,7 +2,7 @@
 
 This inventory comes from `backend/src/app.js`, every mounted route/controller/service, middleware, validators, and `prisma/schema.prisma`. It describes the actual HTTP contract after adding the missing profile routes. The integration matrix and verification results are in [INTEGRATION_REPORT.md](INTEGRATION_REPORT.md).
 
-There are **53 API method/path declarations**: **48 non-generic operations + 5 generic admin CRUD templates**. The allowlist has **16 admin resources**, so expanding the templates gives **128 API operations** (`48 + 5 × 16`). Documentation endpoints are separate. `:id`, `:productId`, and `:itemId` below are UUIDs unless stated otherwise; `:slug` is a textual slug.
+The original commerce inventory has **53 API method/path declarations**: **48 non-generic operations + 5 generic admin CRUD templates**. The allowlist has **16 admin resources**, so expanding those templates gives **128 commerce API operations** (`48 + 5 × 16`). The subsequently integrated assistant adds `POST /api/assistant/chat`, described below. Documentation endpoints are separate. `:id`, `:productId`, and `:itemId` below are UUIDs unless stated otherwise; `:slug` is a textual slug.
 
 ## Shared contract
 
@@ -24,6 +24,17 @@ There are **53 API method/path declarations**: **48 non-generic operations + 5 g
 | Throttling | All `/api` operations: 300 requests/15 minutes/IP; registration and login additionally share 20 requests/15 minutes/IP |
 | Request parsing | JSON/form-urlencoded bodies ≤1 MiB. Duplicate query parameters producing arrays/objects are rejected 422. Do not serialize literal `undefined`/`null` values |
 | Upload location | Files are served at `/api/uploads/<UUID>.<jpg\|png\|webp\|pdf>`, not `/uploads`. Relative URLs returned by this backend must resolve against the backend origin |
+
+## Integrated assistant
+
+`POST /api/assistant/chat` is hosted by the same Express backend. The frontend uses the shared Axios client (`/assistant/chat`, not `/api/api/assistant/chat` or port 3001).
+
+- Body: `{ message, city, selectedProductId?, quantity?, pendingActionId? }`. `city` is the selected slug. The widget omits body `sessionId` and reuses the client's `X-Session-Id` UUID, shared with the guest cart. Authenticated ownership comes from JWT.
+- Response: `S` with `{ type, message, sessionId, language, city, intent, mode, ... }`. Products are existing backend product DTOs and go through the frontend's existing normalizer. No prices or stock are supplied by the browser.
+- Product selection sends `selectedProductId`; specifications, certificate URLs, availability, alternatives and purchase information are returned by existing backend services.
+- An add request returns `type: "pending_action"` plus `{ id, productId, productName, quantity, city, unitPrice, expiresAt }`. The cart is unchanged. A later explicit `Иә, қос` / `Да, добавь` plus this `pendingActionId` can produce `type: "cart"`. Then the frontend refreshes the normal cart and displays `/cart` and `/checkout` links.
+- New messages invalidate old proposal controls. City/identity changes clear the local transcript/pending selection and discard late responses. Confirmation is not auto-retried on network errors. Secrets and payment-card details must not be sent by the frontend.
+- Additional assistant limit: 30 requests/minute/IP. Full details and persistence constraints: [ASSISTANT_MIGRATION.md](ASSISTANT_MIGRATION.md).
 
 ## Authentication, profile, geography, taxonomy
 

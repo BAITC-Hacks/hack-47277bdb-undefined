@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "check:integration": "node scripts/integration-check.mjs",
     "check:contexts": "node scripts/context-check.mjs",
-    "check:pages": "node scripts/pages-check.mjs"
+    "check:pages": "node scripts/pages-check.mjs",
+    "check:assistant": "node scripts/assistant-check.mjs",
+    "check:assistant:integration": "node scripts/assistant-integration-check.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",

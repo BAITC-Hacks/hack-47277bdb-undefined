@@ -6,6 +6,7 @@ const {
   listValidation,
   slugValidation,
   availabilityValidation,
+  relatedValidation,
 } = require('./product.validation');
 
 const router = express.Router();
@@ -16,6 +17,12 @@ router.get(
   availabilityValidation,
   validationMiddleware,
   asyncHandler(controller.availability),
+);
+router.get(
+  '/:id/related',
+  relatedValidation,
+  validationMiddleware,
+  asyncHandler(controller.related),
 );
 router.get('/:slug', slugValidation, validationMiddleware, asyncHandler(controller.getBySlug));
 

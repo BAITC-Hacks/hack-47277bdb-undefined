@@ -2,10 +2,11 @@
   "name": "ekt-store-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Phase 1 REST API foundation for a city-aware electrical equipment catalog.",
+  "description": "Phase 2 city-aware e-commerce REST API for an electrical equipment store.",
   "main": "src/server.js",
   "scripts": {
     "check": "node scripts/check.js",
+    "check:integration": "node scripts/integration-check.js",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "prisma:generate": "prisma generate",
@@ -22,12 +23,14 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.3",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
     "express-validator": "^7.3.2",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.12.1",
+    "multer": "^2.4.0",
     "slugify": "^1.6.9"
   },
   "devDependencies": {

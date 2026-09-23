@@ -26,6 +26,69 @@ enum AttributeType {
   SELECT
 }
 
+enum CustomerType {
+  PERSON
+  COMPANY
+}
+
+enum DeliveryMethod {
+  PICKUP
+  DELIVERY
+}
+
+enum PaymentMethod {
+  ONLINE_CARD
+  CASH_ON_DELIVERY
+  POS_ON_PICKUP
+  BANK_TRANSFER
+}
+
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  PROCESSING
+  READY
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum OneClickOrderStatus {
+  NEW
+  CONTACTED
+  COMPLETED
+  CANCELLED
+}
+
+enum RequestType {
+  GENERAL
+  CALLBACK
+  B2B
+  CUSTOM_PANEL
+  COOPERATION
+}
+
+enum RequestStatus {
+  NEW
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+enum StockReservationStatus {
+  RESERVED
+  RELEASED
+  CONSUMED
+}
+
 model User {
   id        String   @id @default(uuid()) @db.Uuid
   email     String   @unique
@@ -37,6 +100,11 @@ model User {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  favorites       Favorite[]
+  comparisonItems ComparisonItem[]
+  cart            Cart?
+  orders          Order[]
 }
 
 model City {
@@ -48,9 +116,13 @@ model City {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches   Branch[]
-  warehouses Warehouse[]
-  offers     ProductOffer[]
+  branches       Branch[]
+  warehouses     Warehouse[]
+  offers         ProductOffer[]
+  carts          Cart[]
+  oneClickOrders OneClickOrder[]
+  orders         Order[]
+  deliveryRules  DeliveryRule[]
 }
 
 model Branch {
@@ -162,6 +234,11 @@ model Product {
   attributeValues ProductAttributeValue[]
   offers          ProductOffer[]
   stocks          ProductStock[]
+  favorites       Favorite[]
+  comparisonItems ComparisonItem[]
+  cartItems       CartItem[]
+  oneClickOrders  OneClickOrder[]
+  orderItems      OrderItem[]
 
   @@index([categoryId])
   @@index([brandId])
@@ -252,10 +329,256 @@ model ProductStock {
   reserved    Int      @default(0)
   updatedAt   DateTime @updatedAt
 
-  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product      Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse    Warehouse               @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  reservations OrderStockReservation[]
 
   @@unique([productId, warehouseId])
   @@index([productId])
   @@index([warehouseId])
+}
+
+model Favorite {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  productId String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+model ComparisonItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  sessionId String?
+  productId String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user    User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@unique([sessionId, productId])
+  @@index([userId])
+  @@index([sessionId])
+  @@index([productId])
+}
+
+model Cart {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @unique @db.Uuid
+  sessionId String?  @unique
+  cityId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city  City       @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  items CartItem[]
+
+  @@index([cityId])
+}
+
+model CartItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  cartId    String   @db.Uuid
+  productId String   @db.Uuid
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
+}
+
+model OneClickOrder {
+  id           String              @id @default(uuid()) @db.Uuid
+  productId    String              @db.Uuid
+  cityId       String              @db.Uuid
+  quantity     Int
+  customerName String
+  phone        String
+  email        String?
+  status       OneClickOrderStatus @default(NEW)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  city    City    @relation(fields: [cityId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@index([cityId])
+  @@index([status])
+}
+
+model Order {
+  id              String         @id @default(uuid()) @db.Uuid
+  orderNumber     String         @unique
+  userId          String?        @db.Uuid
+  cityId          String         @db.Uuid
+  customerName    String
+  phone           String
+  email           String
+  customerType    CustomerType
+  companyName     String?
+  bin             String?
+  deliveryMethod  DeliveryMethod
+  paymentMethod   PaymentMethod
+  deliveryAddress String?
+  comment         String?
+  subtotal        Decimal        @db.Decimal(14, 2)
+  deliveryPrice   Decimal        @db.Decimal(14, 2)
+  total           Decimal        @db.Decimal(14, 2)
+  status          OrderStatus    @default(NEW)
+  paymentStatus   PaymentStatus  @default(UNPAID)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user  User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  city  City        @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  items OrderItem[]
+
+  @@index([userId])
+  @@index([cityId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id                  String  @id @default(uuid()) @db.Uuid
+  orderId             String  @db.Uuid
+  productId           String  @db.Uuid
+  productNameSnapshot String
+  skuSnapshot         String
+  quantity            Int
+  unitPrice           Decimal @db.Decimal(14, 2)
+  lineTotal           Decimal @db.Decimal(14, 2)
+
+  order        Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product      Product                 @relation(fields: [productId], references: [id], onDelete: Restrict)
+  reservations OrderStockReservation[]
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model OrderStockReservation {
+  id             String                 @id @default(uuid()) @db.Uuid
+  orderItemId    String                 @db.Uuid
+  productStockId String                 @db.Uuid
+  quantity       Int
+  status         StockReservationStatus @default(RESERVED)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  orderItem    OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  productStock ProductStock @relation(fields: [productStockId], references: [id], onDelete: Restrict)
+
+  @@unique([orderItemId, productStockId])
+  @@index([orderItemId])
+  @@index([productStockId])
+  @@index([status])
+}
+
+model DeliveryRule {
+  id                        String   @id @default(uuid()) @db.Uuid
+  cityId                    String?  @db.Uuid
+  nameKk                    String
+  nameRu                    String
+  minimumFreeDeliveryAmount Decimal? @db.Decimal(14, 2)
+  deliveryPrice             Decimal? @db.Decimal(14, 2)
+  estimatedHours            Int?
+  isActive                  Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  city City? @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@index([cityId])
+  @@index([isActive])
+}
+
+model Promotion {
+  id            String    @id @default(uuid()) @db.Uuid
+  slug          String    @unique
+  titleKk       String
+  titleRu       String
+  descriptionKk String?
+  descriptionRu String?
+  imageUrl      String?
+  startsAt      DateTime?
+  endsAt        DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([isActive, startsAt, endsAt])
+}
+
+model News {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  titleKk     String
+  titleRu     String
+  excerptKk   String?
+  excerptRu   String?
+  contentKk   String
+  contentRu   String
+  imageUrl    String?
+  publishedAt DateTime
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublished, publishedAt])
+}
+
+model Faq {
+  id          String  @id @default(uuid()) @db.Uuid
+  questionKk  String
+  questionRu  String
+  answerKk    String
+  answerRu    String
+  sortOrder   Int     @default(0)
+  isPublished Boolean @default(false)
+
+  @@index([isPublished, sortOrder])
+}
+
+model ContentPage {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  titleKk     String
+  titleRu     String
+  contentKk   String
+  contentRu   String
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CustomerRequest {
+  id        String        @id @default(uuid()) @db.Uuid
+  type      RequestType   @default(GENERAL)
+  name      String
+  phone     String
+  email     String?
+  company   String?
+  message   String?
+  status    RequestStatus @default(NEW)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
 }

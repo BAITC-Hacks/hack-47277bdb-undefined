@@ -1,0 +1,261 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  MANAGER
+}
+
+enum AvailabilityStatus {
+  IN_STOCK
+  ON_ORDER
+  OUT_OF_STOCK
+}
+
+enum AttributeType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  SELECT
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  phone     String?
+  password  String
+  firstName String
+  lastName  String?
+  role      UserRole @default(CUSTOMER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model City {
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique
+  nameKk    String
+  nameRu    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches   Branch[]
+  warehouses Warehouse[]
+  offers     ProductOffer[]
+}
+
+model Branch {
+  id             String   @id @default(uuid()) @db.Uuid
+  cityId         String   @db.Uuid
+  nameKk         String
+  nameRu         String
+  addressKk      String?
+  addressRu      String?
+  phone1         String?
+  phone2         String?
+  email          String?
+  workingHoursKk String?
+  workingHoursRu String?
+  latitude       Decimal? @db.Decimal(10, 7)
+  longitude      Decimal? @db.Decimal(10, 7)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  city       City        @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  warehouses Warehouse[]
+
+  @@index([cityId])
+}
+
+model Warehouse {
+  id        String   @id @default(uuid()) @db.Uuid
+  cityId    String   @db.Uuid
+  branchId  String?  @db.Uuid
+  name      String
+  code      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  city   City           @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  branch Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  stocks ProductStock[]
+
+  @@index([cityId])
+  @@index([branchId])
+}
+
+model Category {
+  id            String   @id @default(uuid()) @db.Uuid
+  parentId      String?  @db.Uuid
+  slug          String   @unique
+  nameKk        String
+  nameRu        String
+  descriptionKk String?
+  descriptionRu String?
+  imageUrl      String?
+  sortOrder     Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  parent               Category?             @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children             Category[]            @relation("CategoryTree")
+  products             Product[]
+  attributeDefinitions AttributeDefinition[]
+
+  @@index([parentId])
+  @@index([sortOrder])
+}
+
+model Brand {
+  id            String   @id @default(uuid()) @db.Uuid
+  slug          String   @unique
+  name          String
+  logoUrl       String?
+  descriptionKk String?
+  descriptionRu String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  products Product[]
+}
+
+model Product {
+  id                 String   @id @default(uuid()) @db.Uuid
+  sku                String   @unique
+  supplierSku        String?
+  slug               String   @unique
+  nameKk             String
+  nameRu             String
+  shortDescriptionKk String?
+  shortDescriptionRu String?
+  descriptionKk      String?
+  descriptionRu      String?
+  categoryId         String   @db.Uuid
+  brandId            String?  @db.Uuid
+  unit               String
+  isActive           Boolean  @default(true)
+  isNew              Boolean  @default(false)
+  isSpecialOffer     Boolean  @default(false)
+  isPopular          Boolean  @default(false)
+  popularity         Int      @default(0)
+  certificateUrl     String?
+  manualUrl          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  category        Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  brand           Brand?                  @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  images          ProductImage[]
+  attributeValues ProductAttributeValue[]
+  offers          ProductOffer[]
+  stocks          ProductStock[]
+
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([popularity])
+}
+
+model ProductImage {
+  id        String   @id @default(uuid()) @db.Uuid
+  productId String   @db.Uuid
+  url       String
+  altKk     String?
+  altRu     String?
+  sortOrder Int      @default(0)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([productId, sortOrder])
+}
+
+model AttributeDefinition {
+  id         String        @id @default(uuid()) @db.Uuid
+  categoryId String        @db.Uuid
+  key        String
+  nameKk     String
+  nameRu     String
+  type       AttributeType
+  unit       String?
+  filterable Boolean       @default(false)
+  sortable   Boolean       @default(false)
+  sortOrder  Int           @default(0)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  category Category                @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  values   ProductAttributeValue[]
+
+  @@unique([categoryId, key])
+  @@index([categoryId])
+  @@index([filterable])
+}
+
+model ProductAttributeValue {
+  id                    String   @id @default(uuid()) @db.Uuid
+  productId             String   @db.Uuid
+  attributeDefinitionId String   @db.Uuid
+  textValue             String?
+  numberValue           Decimal? @db.Decimal(20, 6)
+  booleanValue          Boolean?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  product             Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeDefinition AttributeDefinition @relation(fields: [attributeDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, attributeDefinitionId])
+  @@index([attributeDefinitionId])
+}
+
+model ProductOffer {
+  id                    String             @id @default(uuid()) @db.Uuid
+  productId             String             @db.Uuid
+  cityId                String             @db.Uuid
+  webPrice              Decimal            @db.Decimal(14, 2)
+  storePrice            Decimal?           @db.Decimal(14, 2)
+  availabilityStatus    AvailabilityStatus @default(OUT_OF_STOCK)
+  deliveryEstimateHours Int?
+  isActive              Boolean            @default(true)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  city    City    @relation(fields: [cityId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, cityId])
+  @@index([productId])
+  @@index([cityId])
+  @@index([cityId, isActive])
+}
+
+model ProductStock {
+  id          String   @id @default(uuid()) @db.Uuid
+  productId   String   @db.Uuid
+  warehouseId String   @db.Uuid
+  quantity    Int      @default(0)
+  reserved    Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, warehouseId])
+  @@index([productId])
+  @@index([warehouseId])
+}

@@ -1,2 +1,15 @@
-import { Route, Routes } from "react-router-dom"; import { MainLayout } from "./layouts/MainLayout"; import { CartPage, CatalogPage, CheckoutPage, ComparePage, FavoritesPage, HomePage, InfoPage, NotFoundPage, ProductPage, SearchPage } from "./pages/Pages";
-export default function App() { return <Routes><Route element={<MainLayout/>}><Route index element={<HomePage/>}/><Route path="catalog" element={<CatalogPage/>}/><Route path="catalog/:categorySlug" element={<CatalogPage/>}/><Route path="product/:slug" element={<ProductPage/>}/><Route path="search" element={<SearchPage/>}/><Route path="favorites" element={<FavoritesPage/>}/><Route path="compare" element={<ComparePage/>}/><Route path="cart" element={<CartPage/>}/><Route path="checkout" element={<CheckoutPage/>}/><Route path="news" element={<InfoPage title="Жаңалықтар" kind="news"/>}/><Route path="news/:slug" element={<InfoPage title="Жаңалық"/>}/><Route path="faq" element={<InfoPage title="Жиі қойылатын сұрақтар" kind="faq"/>}/><Route path="delivery-and-payment" element={<InfoPage title="Жеткізу және төлем"/>}/><Route path="returns-and-exchange" element={<InfoPage title="Қайтару және айырбастау"/>}/><Route path="how-to-order" element={<InfoPage title="Қалай тапсырыс беру керек"/>}/><Route path="contacts" element={<InfoPage title="Байланыстар мен дүкендер"/>}/><Route path="account" element={<InfoPage title="Жеке кабинет"/>}/><Route path="account/orders" element={<InfoPage title="Тапсырыстарым"/>}/><Route path="login" element={<InfoPage title="Жүйеге кіру"/>}/><Route path="register" element={<InfoPage title="Тіркелу"/>}/><Route path="*" element={<NotFoundPage/>}/></Route></Routes>; }
+import { Route, Routes } from "react-router-dom";
+import { MainLayout } from "./layouts/MainLayout";
+import { AccountPage, AuthPage, CartPage, CatalogPage, CheckoutPage, ComparePage, ContactsPage, ContentPage, FaqPage, FavoritesPage, HomePage, NewsDetailPage, NewsPage, NotFoundPage, OrderDetailPage, OrdersPage, ProductPage, SearchPage } from "./pages/Pages";
+import "./styles/integration.css";
+
+export default function App() {
+  return <Routes><Route element={<MainLayout/>}>
+    <Route index element={<HomePage/>}/><Route path="catalog" element={<CatalogPage/>}/><Route path="catalog/:categorySlug" element={<CatalogPage/>}/><Route path="product/:slug" element={<ProductPage/>}/><Route path="search" element={<SearchPage/>}/>
+    <Route path="favorites" element={<FavoritesPage/>}/><Route path="compare" element={<ComparePage/>}/><Route path="cart" element={<CartPage/>}/><Route path="checkout" element={<CheckoutPage/>}/>
+    <Route path="news" element={<NewsPage/>}/><Route path="news/:slug" element={<NewsDetailPage/>}/><Route path="faq" element={<FaqPage/>}/>
+    {["delivery-and-payment", "returns-and-exchange", "how-to-order", "online-payment", "installment", "privacy-policy", "b2b"].map((slug) => <Route key={slug} path={slug} element={<ContentPage/>}/>)}
+    <Route path="contacts" element={<ContactsPage/>}/><Route path="account" element={<AccountPage/>}/><Route path="account/orders" element={<OrdersPage/>}/><Route path="account/orders/:id" element={<OrderDetailPage/>}/>
+    <Route path="login" element={<AuthPage/>}/><Route path="register" element={<AuthPage register/>}/><Route path="*" element={<NotFoundPage/>}/>
+  </Route></Routes>;
+}

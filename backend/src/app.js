@@ -13,6 +13,7 @@ const { swaggerSpec, swaggerRouter } = require('./docs/swagger');
 
 const healthRoutes = require('./modules/health/health.routes');
 const authRoutes = require('./modules/auth/auth.routes');
+const userRoutes = require('./modules/users/user.routes');
 const cityRoutes = require('./modules/cities/city.routes');
 const branchRoutes = require('./modules/branches/branch.routes');
 const categoryRoutes = require('./modules/categories/category.routes');
@@ -63,6 +64,7 @@ app.use('/api', apiRateLimiter);
 
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/cities', cityRoutes);
 app.use('/api/branches', branchRoutes);
 app.use('/api/categories', categoryRoutes);

@@ -8,6 +8,12 @@ export interface Branch {
   id: string;
   cityId: string;
   name: string;
-  address: string;
-  phone?: string;
+  address: string | null;
+  phone1: string | null;
+  phone2: string | null;
+  email: string | null;
+  workingHours: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  city?: City;
 }

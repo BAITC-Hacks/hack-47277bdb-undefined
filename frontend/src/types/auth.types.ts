@@ -1,8 +1,13 @@
 export interface AuthUser {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string | null;
   email: string;
-  phone?: string;
+  phone: string | null;
+  role: "CUSTOMER" | "ADMIN" | "MANAGER";
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface LoginPayload {
@@ -11,8 +16,15 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload extends LoginPayload {
-  name: string;
-  phone?: string;
+  firstName: string;
+  lastName?: string | null;
+  phone?: string | null;
+}
+
+export interface ProfileUpdatePayload {
+  firstName?: string;
+  lastName?: string | null;
+  phone?: string | null;
 }
 
 export interface AuthSession {

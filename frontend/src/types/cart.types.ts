@@ -1,20 +1,35 @@
-import type { Product } from "./product.types";
+import type { City } from "./city.types";
+import type { AvailabilityStatus } from "./product.types";
+
+export interface CartProduct {
+  id: string;
+  sku: string;
+  slug: string;
+  name: string;
+  unit: string;
+  brand: string | null;
+  category: string;
+  image: string | null;
+}
 
 export interface CartItem {
   id: string;
-  productId: string;
-  product: Product;
+  product: CartProduct;
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  availableQuantity: number;
+  availabilityStatus: AvailabilityStatus;
+  warning: string | null;
 }
 
 export interface Cart {
-  id: string;
-  cityId: string;
+  id: string | null;
+  city: City | null;
   items: CartItem[];
   subtotal: number;
-  totalItems: number;
+  totalItemCount: number;
+  warnings: Array<{ itemId: string; productId: string; code: string }>;
 }
 
 export interface AddCartItemPayload {

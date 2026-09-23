@@ -1,3 +1,41 @@
-import apiClient, { requestData } from "./client"; import { mockResponse, useMocks } from "../mocks/mock-api"; import { products } from "../mocks/mock-data"; import type { Product } from "../types/product.types";
+import apiClient, { requestData, requestVoid } from "./client";
+import { mockResponse, useMocks } from "../mocks/mock-api";
+import { products } from "../mocks/mock-data";
+import type { Product, TechnicalSpecification } from "../types/product.types";
+import { hydrateSavedProducts } from "./saved-products";
+
+export interface ComparisonDto {
+  products: Array<{ id: string; slug: string }>;
+  attributes: Array<Omit<TechnicalSpecification, "value"> & { values: Record<string, TechnicalSpecification["value"]> }>;
+  count: number;
+  maximum: number;
+}
 let ids: string[] = [];
-export const comparisonApi = { list: () => useMocks ? mockResponse(products.filter((p) => ids.includes(p.id))) : requestData<Product[]>(apiClient.get("/comparison")), add: (productId: string) => { if (!useMocks) return requestData<void>(apiClient.post(`/comparison/${productId}`)); ids = [...new Set([...ids, productId])].slice(0, 4); return mockResponse(undefined); }, remove: (productId: string) => { if (!useMocks) return requestData<void>(apiClient.delete(`/comparison/${productId}`)); ids = ids.filter((id) => id !== productId); return mockResponse(undefined); }, clear: () => { if (!useMocks) return requestData<void>(apiClient.delete("/comparison")); ids = []; return mockResponse(undefined); } };
+export const comparisonApi = {
+  async list(city?: string): Promise<Product[]> {
+    if (useMocks) return mockResponse(products.filter((product) => ids.includes(product.id)));
+    const comparison = await requestData<ComparisonDto>(apiClient.get("/comparison"));
+    const hydrated = await hydrateSavedProducts(comparison.products, city);
+    return hydrated.map((product) => ({
+      ...product,
+      technicalSpecifications: comparison.attributes.filter(({ values }) => Object.hasOwn(values, product.id))
+        .map(({ values, ...attribute }) => ({ ...attribute, value: values[product.id] ?? null })),
+    }));
+  },
+  async add(productId: string): Promise<void> {
+    if (!useMocks) return requestVoid(apiClient.post(`/comparison/${encodeURIComponent(productId)}`));
+    if (!ids.includes(productId) && ids.length >= 4) throw new Error("Салыстыруға ең көбі 4 тауар қосуға болады");
+    ids = [...new Set([...ids, productId])];
+    return mockResponse(undefined);
+  },
+  async remove(productId: string): Promise<void> {
+    if (!useMocks) return requestVoid(apiClient.delete(`/comparison/${encodeURIComponent(productId)}`));
+    ids = ids.filter((id) => id !== productId);
+    return mockResponse(undefined);
+  },
+  async clear(): Promise<void> {
+    if (!useMocks) return requestVoid(apiClient.delete("/comparison"));
+    ids = [];
+    return mockResponse(undefined);
+  },
+};

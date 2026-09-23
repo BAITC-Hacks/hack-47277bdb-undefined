@@ -1,0 +1,1 @@
+import apiClient,{requestData}from"./client"; import type{AuthUser}from"../types/auth.types"; export const usersApi={me:()=>requestData<AuthUser>(apiClient.get("/users/me")),update:(payload:Partial<AuthUser>)=>requestData<AuthUser>(apiClient.patch("/users/me",payload))};

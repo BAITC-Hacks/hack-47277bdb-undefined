@@ -1,0 +1,4 @@
+import apiClient, { requestData } from "./client"; import { mockResponse, useMocks } from "../mocks/mock-api"; import type { Order, OrderPayload } from "../types/order.types";
+let orders: Order[] = [];
+const createMock = (): Order => ({ id: `EKT-${Date.now()}`, status: "NEW", createdAt: new Date().toISOString(), total: 0 });
+export const ordersApi = { create: (payload: OrderPayload) => { if (!useMocks) return requestData<Order>(apiClient.post("/orders", payload)); const order = createMock(); orders = [order, ...orders]; return mockResponse(order); }, list: () => useMocks ? mockResponse(orders) : requestData<Order[]>(apiClient.get("/orders/me")), get: (id: string) => useMocks ? mockResponse(orders.find((x) => x.id === id)!) : requestData<Order>(apiClient.get(`/orders/${id}`)), oneClick: (payload: { productId: string; phone: string }) => useMocks ? mockResponse(createMock()) : requestData<Order>(apiClient.post("/one-click-orders", payload)) };

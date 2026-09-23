@@ -1,0 +1,1 @@
+import apiClient,{requestData}from"./client"; import type{NewsArticle}from"../types/content.types"; export const newsApi={list:()=>requestData<NewsArticle[]>(apiClient.get("/news")),get:(slug:string)=>requestData<NewsArticle>(apiClient.get(`/news/${slug}`))};

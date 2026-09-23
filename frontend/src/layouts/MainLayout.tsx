@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { BarChart3, Heart, MapPin, Menu, Search, ShoppingCart, UserRound, X } from "lucide-react";
+import { BarChart3, Bot, Heart, MapPin, Menu, Search, ShoppingCart, UserRound, X } from "lucide-react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { categoriesApi } from "../api/categories.api";
 import { extractApiError } from "../api/client";
@@ -8,7 +8,7 @@ import { ErrorMessage, LoadingSpinner, useApiResource } from "../components/comm
 import { formatPrice } from "../utils/format";
 
 export function MainLayout() {
-  const navigate = useNavigate(); const [query, setQuery] = useState(""); const [open, setOpen] = useState(false); const [changingCity, setChangingCity] = useState(false); const [notice, setNotice] = useState("");
+  const navigate = useNavigate(); const [query, setQuery] = useState(""); const [open, setOpen] = useState(false); const [assistantOpen, setAssistantOpen] = useState(false); const [changingCity, setChangingCity] = useState(false); const [notice, setNotice] = useState("");
   const cityContext = useCity(); const { city, cities, setCity } = cityContext; const { language, setLanguage } = useLanguage(); const cartContext = useCart(); const { cart } = cartContext; const saved = useSaved(); const auth = useAuth();
   const categories = useApiResource(() => categoriesApi.tree(), [language]);
   const submit = (event: FormEvent) => { event.preventDefault(); if (query.trim()) { setOpen(false); navigate(`/search?q=${encodeURIComponent(query.trim())}`); } };
@@ -21,6 +21,14 @@ export function MainLayout() {
     {open && <div className="mega-menu"><div className="shell"><div className="mega-heading"><b>Тауарлар каталогы</b><button aria-label="Жабу" onClick={() => setOpen(false)}><X size={18}/></button></div>{categories.loading ? <LoadingSpinner/> : categories.error ? <ErrorMessage message={categories.error} retry={categories.reload}/> : <div className="category-menu">{categories.data?.map((category) => <div className="category-menu-group" key={category.id}><Link onClick={() => setOpen(false)} to={`/catalog/${category.slug}`}>{category.name}<span>›</span></Link>{category.children?.map((child) => <Link className="subcategory-menu-link" key={child.id} onClick={() => setOpen(false)} to={`/catalog/${child.slug}`}>{child.name}</Link>)}</div>)}</div>}<p className="image-search-note"><button className="text-button" onClick={() => { setNotice("Сурет бойынша іздеу әлі бапталмаған. Тауар атауы немесе артикул арқылы іздеңіз."); setOpen(false); }}>Сурет бойынша іздеу</button></p></div></div>}
   </header>
     <main className="shell">{notice && <div className="notice" role="status"><p>{notice}</p><button className="text-button" onClick={() => setNotice("")} aria-label="Хабарламаны жабу">Жабу</button></div>}{contextErrors.map((error) => <ErrorMessage key={error} message={error}/>)}<Outlet/></main>
+    <div className={`assistant-widget ${assistantOpen ? "open" : ""}`} aria-live="polite" aria-label="ИИ консультант">
+      <div className="assistant-widget-header"><span><Bot size={18}/>ИИ консультант</span><button type="button" aria-label="Жабу" onClick={() => setAssistantOpen(false)}><X size={16}/></button></div>
+      <p>Тауар, артикул, жеткізу немесе себет туралы сұрағыңызды жазыңыз.</p>
+      <div className="assistant-widget-actions"><button type="button">Тауар табу</button><button type="button">Себет</button></div>
+    </div>
+    <button type="button" className="assistant-launcher" aria-label="ИИ консультантты ашу" aria-expanded={assistantOpen} onClick={() => setAssistantOpen(!assistantOpen)}>
+      <Bot size={18}/>ИИ консультант
+    </button>
     <nav className="mobile-nav"><NavLink to="/catalog"><Menu/>Каталог</NavLink><NavLink to="/favorites"><Heart/>Таңдаулы</NavLink><NavLink to="/cart"><ShoppingCart/>Себет</NavLink><NavLink to="/account"><UserRound/>Кабинет</NavLink></nav>
     <footer className="site-footer"><div className="shell footer-grid"><div><Link className="logo" to="/">EKT<span>.KZ</span></Link><p>Электр жабдықтарының демо дүкені.</p></div><div><b>Сатып алушыға</b><Link to="/delivery-and-payment">Жеткізу және төлем</Link><Link to="/returns-and-exchange">Қайтару және айырбастау</Link><Link to="/how-to-order">Қалай тапсырыс беру керек</Link><Link to="/online-payment">Онлайн төлем</Link><Link to="/installment">Бөліп төлеу</Link></div><div><b>Компания</b><Link to="/contacts">Байланыстар</Link><Link to="/news">Жаңалықтар</Link><Link to="/b2b">Заңды тұлғаларға</Link><Link to="/privacy-policy">Құпиялық саясаты</Link></div><div><b>Көмек</b><Link to="/faq">Жиі қойылатын сұрақтар</Link><Link to="/contacts">Өтінім жіберу</Link><span>Контактілер таңдалған қала бойынша көрсетіледі.</span></div></div></footer>
   </>;

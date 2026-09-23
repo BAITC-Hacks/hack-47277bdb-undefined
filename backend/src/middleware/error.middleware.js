@@ -27,7 +27,11 @@ const normalizeError = (error) => {
     if (error.code === 'P2003') {
       return new ApiError(409, 'RELATED_RESOURCE_CONFLICT', 'Байланысты ресурс табылмады немесе қолданылуда');
     }
-    if (error.code === 'P2034') {
+    if (error.code === 'P2004' || (error.code === 'P2010' && error.meta?.code === '23514')) {
+      return new ApiError(409, 'DATA_CONSTRAINT_CONFLICT', 'Өзгеріс деректер тұтастығы шартына қайшы');
+    }
+    if (error.code === 'P2034' ||
+        (error.code === 'P2010' && ['40001', '40P01'].includes(error.meta?.code))) {
       return new ApiError(409, 'TRANSACTION_CONFLICT', 'Сұрау басқа операциямен қайшы келді. Қайталап көріңіз.');
     }
     return new ApiError(500, 'DATABASE_ERROR', 'Дерекқор сұрауын орындау мүмкін болмады');

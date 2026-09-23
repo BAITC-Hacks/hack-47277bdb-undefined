@@ -13,8 +13,10 @@ const findJavaScriptFiles = (directory) =>
 
 const checkSyntax = () => {
   const files = [
-    ...findJavaScriptFiles(path.join(projectRoot, 'src')),
-    __filename,
+    ...['src', 'prisma', 'scripts', 'tests'].flatMap((folder) =>
+      findJavaScriptFiles(path.join(projectRoot, folder)),
+    ),
+    path.join(projectRoot, 'jest.config.js'),
   ];
 
   for (const file of files) {

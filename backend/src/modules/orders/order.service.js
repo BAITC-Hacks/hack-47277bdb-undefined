@@ -6,6 +6,7 @@ const { getLocalizedValue } = require('../../utils/localization');
 const { findCart } = require('../cart/cart.service');
 const { calculateDelivery } = require('../delivery/delivery.service');
 const { assertValidStock } = require('../products/product.service');
+const serializable = require('../../utils/transaction');
 
 const createOrderNumber = () => {
   const now = new Date();
@@ -60,11 +61,14 @@ const allocateStock = async (tx, productId, cityId, requestedQuantity) => {
 };
 
 const createOrder = async ({ identity, payload, language }) =>
-  prisma.$transaction(
+  serializable(
     async (tx) => {
       const cart = await findCart(identity, tx);
       if (!cart || cart.items.length === 0) {
         throw new ApiError(409, 'CART_EMPTY', 'Себет бос');
+      }
+      if (!cart.city.isActive) {
+        throw new ApiError(409, 'CITY_INACTIVE', 'Себет қаласы белсенді емес');
       }
       if (payload.customerType === 'COMPANY' && (!payload.companyName || !payload.bin)) {
         throw new ApiError(422, 'COMPANY_DETAILS_REQUIRED', 'Компания атауы мен БСН қажет');
@@ -160,7 +164,6 @@ const createOrder = async ({ identity, payload, language }) =>
       await tx.cart.delete({ where: { id: cart.id } });
       return getOrderByIdInternal(tx, order.id);
     },
-    { isolationLevel: 'Serializable', timeout: 15000 },
   );
 
 const orderInclude = {
@@ -268,7 +271,7 @@ const processReservations = async (tx, orderId, targetStatus) => {
 };
 
 const updateOrderStatus = async (orderId, { status, paymentStatus }) =>
-  prisma.$transaction(
+  serializable(
     async (tx) => {
       const order = await tx.order.findUnique({ where: { id: orderId } });
       if (!order) throw new ApiError(404, 'ORDER_NOT_FOUND', 'Тапсырыс табылмады');
@@ -286,7 +289,6 @@ const updateOrderStatus = async (orderId, { status, paymentStatus }) =>
         data: { status, ...(paymentStatus ? { paymentStatus } : {}) },
       });
     },
-    { isolationLevel: 'Serializable', timeout: 15000 },
   );
 
 const listAdminOrders = async ({ page, limit, status }) => {

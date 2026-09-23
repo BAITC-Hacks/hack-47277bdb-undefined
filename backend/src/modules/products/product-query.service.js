@@ -2,7 +2,6 @@ const prisma = require('../../config/prisma');
 const ApiError = require('../../utils/apiError');
 const { getPagination, buildPagination } = require('../../utils/pagination');
 const { getLocalizedValue } = require('../../utils/localization');
-const { findActiveCity } = require('../cities/city.service');
 const {
   calculateWarehouseAvailableStock,
   calculateCityAvailableStock,
@@ -165,7 +164,8 @@ const sortCards = (cards, sort, language) => {
     newest: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
     default: (a, b) => b.popularity - a.popularity || new Date(b.createdAt) - new Date(a.createdAt),
   };
-  return cards.sort(sorters[sort] || sorters.default);
+  const compare = sorters[sort] || sorters.default;
+  return cards.sort((a, b) => compare(a, b) || a.id.localeCompare(b.id));
 };
 
 const searchProducts = async ({ query, language }) => {
@@ -289,7 +289,7 @@ const findRelatedProducts = async ({ productId, citySlug, language, limit = 8 })
       images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }], take: 1 },
       ...(city ? { offers: { where: { cityId: city.id, isActive: true }, take: 1 } } : {}),
     },
-    take: 50,
+    orderBy: { id: 'asc' },
   });
   const totals = await getCityStocks(candidates.map((item) => item.id), city?.id);
   return candidates

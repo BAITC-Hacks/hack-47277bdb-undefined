@@ -1,6 +1,7 @@
 const prisma = require('../../config/prisma');
 const ApiError = require('../../utils/apiError');
 const { getLocalizedValue } = require('../../utils/localization');
+const serializable = require('../../utils/transaction');
 
 const MAX_COMPARISON_ITEMS = 4;
 const ownerWhere = ({ userId, sessionId }) => (userId ? { userId } : { sessionId });
@@ -9,7 +10,7 @@ const addItem = async (identity, productId) => {
   const product = await prisma.product.findFirst({ where: { id: productId, isActive: true } });
   if (!product) throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Тауар табылмады');
 
-  return prisma.$transaction(
+  return serializable(
     async (tx) => {
       const owner = ownerWhere(identity);
       const existing = await tx.comparisonItem.findFirst({ where: { ...owner, productId } });
@@ -20,7 +21,6 @@ const addItem = async (identity, productId) => {
       }
       return tx.comparisonItem.create({ data: { ...identity, productId } });
     },
-    { isolationLevel: 'Serializable' },
   );
 };
 

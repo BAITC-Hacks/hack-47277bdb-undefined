@@ -1,4 +1,5 @@
 const { body } = require('express-validator');
+const { optionalTextBody } = require('../../utils/validation');
 
 const emailValidation = body('email')
   .isString()
@@ -23,18 +24,10 @@ const registerValidation = [
     .trim()
     .isLength({ min: 1, max: 100 })
     .withMessage('Аты 1–100 таңба аралығында болуы керек'),
-  body('lastName')
-    .optional({ nullable: true, checkFalsy: true })
-    .isString()
-    .withMessage('Тегі мәтін болуы керек')
-    .trim()
+  optionalTextBody('lastName', 'Тегі мәтін болуы керек')
     .isLength({ max: 100 })
     .withMessage('Тегі 100 таңбадан аспауы керек'),
-  body('phone')
-    .optional({ nullable: true, checkFalsy: true })
-    .isString()
-    .withMessage('Телефон мәтін болуы керек')
-    .trim()
+  optionalTextBody('phone', 'Телефон мәтін болуы керек')
     .isLength({ min: 5, max: 30 })
     .withMessage('Телефон 5–30 таңба аралығында болуы керек'),
 ];

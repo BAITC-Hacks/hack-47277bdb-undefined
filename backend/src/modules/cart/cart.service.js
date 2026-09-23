@@ -3,6 +3,7 @@ const prisma = require('../../config/prisma');
 const ApiError = require('../../utils/apiError');
 const { getLocalizedValue } = require('../../utils/localization');
 const { getCityStocks, resolveCatalogCity } = require('../products/product-query.service');
+const serializable = require('../../utils/transaction');
 
 const ownerWhere = ({ userId, sessionId }) => (userId ? { userId } : { sessionId });
 
@@ -55,7 +56,8 @@ const serializeCart = async (cart, language, db = prisma) => {
     const offer = offerMap.get(product.id) || null;
     const availableQuantity = stockTotals.get(product.id) || 0;
     let warning = null;
-    if (!product.isActive) warning = 'PRODUCT_INACTIVE';
+    if (!cart.city.isActive) warning = 'CITY_INACTIVE';
+    else if (!product.isActive) warning = 'PRODUCT_INACTIVE';
     else if (!offer) warning = 'OFFER_UNAVAILABLE';
     else if (item.quantity > availableQuantity) warning = 'INSUFFICIENT_STOCK';
     if (warning) warnings.push({ itemId: item.id, productId: product.id, code: warning });
@@ -108,15 +110,19 @@ const ensureCart = async (identity, cityId, db = prisma) => {
     ? await db.city.findFirst({ where: { id: cityId, isActive: true } })
     : await resolveCatalogCity(null, true, db);
   if (!city) throw new ApiError(404, 'CITY_NOT_FOUND', 'Қала табылмады');
-  try {
-    return await db.cart.create({ data: { ...identity, cityId: city.id } });
-  } catch (error) {
-    if (error.code === 'P2002') return db.cart.findFirst({ where: ownerWhere(identity) });
-    throw error;
-  }
+  return db.cart.upsert({
+    where: ownerWhere(identity),
+    create: { ...identity, cityId: city.id },
+    update: {},
+  });
 };
 
 const validateCartQuantity = async (productId, cityId, quantity, db = prisma) => {
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10000) {
+    throw new ApiError(422, 'INVALID_QUANTITY', 'quantity 1–10000 аралығындағы бүтін сан болуы керек');
+  }
+  const city = await db.city.findFirst({ where: { id: cityId, isActive: true } });
+  if (!city) throw new ApiError(409, 'CITY_INACTIVE', 'Себет қаласы белсенді емес');
   const [product, offer, stockTotals] = await Promise.all([
     db.product.findFirst({ where: { id: productId, isActive: true } }),
     db.productOffer.findFirst({ where: { productId, cityId, isActive: true } }),
@@ -134,50 +140,50 @@ const validateCartQuantity = async (productId, cityId, quantity, db = prisma) =>
   return { product, offer, available };
 };
 
-const addItem = async (identity, { productId, quantity }, language) => {
-  const cart = await ensureCart(identity);
-  const existing = await prisma.cartItem.findUnique({
+const addItem = (identity, { productId, quantity }, language) => serializable(async (tx) => {
+  const cart = await ensureCart(identity, undefined, tx);
+  const existing = await tx.cartItem.findUnique({
     where: { cartId_productId: { cartId: cart.id, productId } },
   });
   const requestedQuantity = (existing?.quantity || 0) + quantity;
-  await validateCartQuantity(productId, cart.cityId, requestedQuantity);
-  await prisma.cartItem.upsert({
+  await validateCartQuantity(productId, cart.cityId, requestedQuantity, tx);
+  await tx.cartItem.upsert({
     where: { cartId_productId: { cartId: cart.id, productId } },
     create: { cartId: cart.id, productId, quantity },
     update: { quantity: requestedQuantity },
   });
-  return getCart(identity, language);
-};
+  return getCart(identity, language, tx);
+});
 
-const updateItem = async (identity, itemId, quantity, language) => {
-  const cart = await prisma.cart.findFirst({ where: ownerWhere(identity) });
+const updateItem = (identity, itemId, quantity, language) => serializable(async (tx) => {
+  const cart = await tx.cart.findFirst({ where: ownerWhere(identity) });
   if (!cart) throw new ApiError(404, 'CART_NOT_FOUND', 'Себет табылмады');
-  const item = await prisma.cartItem.findFirst({ where: { id: itemId, cartId: cart.id } });
+  const item = await tx.cartItem.findFirst({ where: { id: itemId, cartId: cart.id } });
   if (!item) throw new ApiError(404, 'CART_ITEM_NOT_FOUND', 'Себеттегі тауар табылмады');
-  await validateCartQuantity(item.productId, cart.cityId, quantity);
-  await prisma.cartItem.update({ where: { id: item.id }, data: { quantity } });
-  return getCart(identity, language);
-};
+  await validateCartQuantity(item.productId, cart.cityId, quantity, tx);
+  await tx.cartItem.update({ where: { id: item.id }, data: { quantity } });
+  return getCart(identity, language, tx);
+});
 
-const removeItem = async (identity, itemId, language) => {
-  const cart = await prisma.cart.findFirst({ where: ownerWhere(identity) });
+const removeItem = (identity, itemId, language) => serializable(async (tx) => {
+  const cart = await tx.cart.findFirst({ where: ownerWhere(identity) });
   if (!cart) return emptyCart();
-  await prisma.cartItem.deleteMany({ where: { id: itemId, cartId: cart.id } });
-  return getCart(identity, language);
-};
+  await tx.cartItem.deleteMany({ where: { id: itemId, cartId: cart.id } });
+  return getCart(identity, language, tx);
+});
 
 const clearCart = async (identity) => {
   const cart = await prisma.cart.findFirst({ where: ownerWhere(identity) });
   if (cart) await prisma.cart.delete({ where: { id: cart.id } });
 };
 
-const changeCity = async (identity, cityId, language) => {
-  const city = await prisma.city.findFirst({ where: { id: cityId, isActive: true } });
+const changeCity = (identity, cityId, language) => serializable(async (tx) => {
+  const city = await tx.city.findFirst({ where: { id: cityId, isActive: true } });
   if (!city) throw new ApiError(404, 'CITY_NOT_FOUND', 'Қала табылмады');
-  const cart = await ensureCart(identity, cityId);
-  await prisma.cart.update({ where: { id: cart.id }, data: { cityId } });
-  return getCart(identity, language);
-};
+  const cart = await ensureCart(identity, cityId, tx);
+  await tx.cart.update({ where: { id: cart.id }, data: { cityId } });
+  return getCart(identity, language, tx);
+});
 
 module.exports = {
   getCart,

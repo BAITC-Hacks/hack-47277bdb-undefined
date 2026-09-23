@@ -40,11 +40,11 @@ const listFavorites = async (userId, language) => {
 const addFavorite = async (userId, productId) => {
   const product = await prisma.product.findFirst({ where: { id: productId, isActive: true } });
   if (!product) throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Тауар табылмады');
-  const existing = await prisma.favorite.findUnique({
+  return prisma.favorite.upsert({
     where: { userId_productId: { userId, productId } },
+    create: { userId, productId },
+    update: {},
   });
-  if (existing) return existing;
-  return prisma.favorite.create({ data: { userId, productId } });
 };
 
 const removeFavorite = (userId, productId) =>

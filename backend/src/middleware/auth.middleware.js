@@ -32,7 +32,10 @@ const authMiddleware = async (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return next(new ApiError(401, 'TOKEN_EXPIRED', 'Токеннің мерзімі аяқталды'));
     }
-    return next(new ApiError(401, 'INVALID_TOKEN', 'Токен жарамсыз'));
+    if (error.name === 'JsonWebTokenError' || error.name === 'NotBeforeError') {
+      return next(new ApiError(401, 'INVALID_TOKEN', 'Токен жарамсыз'));
+    }
+    return next(error);
   }
 };
 

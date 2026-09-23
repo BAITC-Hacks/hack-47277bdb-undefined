@@ -9,6 +9,7 @@
     "prisma:seed": "prisma db seed",
     "check": "node scripts/check.js",
     "check:demo": "node scripts/verify-demo.js",
+    "check:assistant": "node scripts/check-assistant.js",
     "check:integration": "node scripts/integration-check.js",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",

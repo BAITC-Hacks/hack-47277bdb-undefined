@@ -1,5 +1,7 @@
 # Frontend / Backend integration audit
 
+> Historical frontend/backend integration report. The subsequent assistant consolidation is documented in [ASSISTANT_MIGRATION.md](ASSISTANT_MIGRATION.md); assistant routes/models were added after this inventory. Earlier statements below about no assistant implementation describe the integration snapshot, not the current backend.
+
 ## Initial audit — before implementation
 
 Source of truth: actual Express mounts/routes/controllers/services and React API services/pages, not earlier documentation. Backend is JavaScript/CommonJS; frontend remains React/TypeScript/Vite. Database resets, seed deletion, AI implementation and a new admin dashboard are out of scope.

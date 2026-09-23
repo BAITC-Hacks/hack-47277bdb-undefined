@@ -18,7 +18,7 @@
 
 Prisma client/CLI бірдей `6.19.3` patch нұсқасында. `package.json` ішіндегі шектелген overrides `@prisma/config → deepmerge-ts 8.0.0` және `exceljs → uuid 11.1.1` транзитивті тәуелділіктерінің қауіпсіздік жаңартуларын бекітеді; Prisma командалары мен XLSX ағыны осы конфигурациямен тексеріледі.
 
-Осы backend ішінде TypeScript, Docker, Redis, BullMQ, AI, chatbot, frontend немесе төлем провайдерінің интеграциясы жоқ. Репозиторийдің басқа бумалары бұл backend-тің құрамына кірмейді.
+Осы backend ішінде TypeScript, Docker, Redis, BullMQ, frontend немесе төлем провайдерінің интеграциясы жоқ. Ассистент енді осы backend-тің CommonJS модулі ретінде жұмыс істейді; бөлек `ai/` сервері архивке ауыстырылды.
 
 ## Архитектура және бума құрылымы
 
@@ -336,9 +336,9 @@ Remove-Item Env:DATABASE_URL
 
 Содан кейін `.env` файлына `TEST_DATABASE_URL` мәнін қосып, `npm test` орындаңыз. Тест seed-ті қажет етпейді және JWT secret-ті тест процесі ішінде кездейсоқ мәнмен ауыстырады. PostgreSQL қолжетімсіз болса тесттер жалған successful нәтиже бермей, байланыс қатесін көрсетеді.
 
-## Болашақ AI consultant үшін service шекарасы
+## Ассистент және ортақ service шекарасы
 
-AI consultant бұл phase-де іске асырылмаған. Болашақ интеграция үшін HTTP-ден тәуелсіз қолданыстағы каталог функциялары бар:
+`POST /api/assistant/chat` — осы Express серверіндегі қазақша ассистент. Ол HTTP-ден тәуелсіз қолданыстағы каталог функцияларын пайдаланады:
 
 | Файл | Экспорт және signature |
 | --- | --- |
@@ -351,7 +351,13 @@ AI consultant бұл phase-де іске асырылмаған. Болашақ 
 | `src/modules/products/product.service.js` | `getProductBySlug({ slug, citySlug, language })` |
 | Сол файл | `getProductAvailability({ productId, citySlug, language })` |
 
-`cityId` — UUID, `citySlug` — slug. `searchProducts` service-іне HTTP-ден тыс тікелей бергенде boolean/number параметрлерін тиісті JS типінде беріңіз. `getCityPrice` raw Prisma offer не `null`, `getCityStock` stock breakdown қайтарады; сыртқы интерфейс қажет болса DTO-ға түрлендіру caller міндеті. Осы service-терді қайта қолдану үшін AI SDK, chatbot модулі немесе vector database қосылған жоқ.
+`cityId` — UUID, `citySlug` — slug. `searchProducts` service-іне HTTP-ден тыс тікелей бергенде boolean/number параметрлерін тиісті JS типінде беріңіз. `getCityPrice` raw Prisma offer не `null`, `getCityStock` stock breakdown қайтарады; ассистент бұл деректерді өз құралдары арқылы пайдаланады. Бөлек catalog/cart/stock, pg pool немесе vector database жоқ.
+
+Ассистентке бөлек сервер іске қоспаңыз. Нақты растауға дейін себет өзгермейді. Әңгіме және күтілген әрекет негізгі Prisma схемасында сақталады; `npx prisma migrate deploy` тек екі жаңа кестені қосады. `npm run check:assistant` жұмыс істеп тұрған серверге нақты HTTP smoke test жібереді; `npm test` барлық регрессияларды тексереді.
+
+Кілтсіз детерминдік режим әдепкі. Қосымша OpenAI жіктеуін қосу үшін `.env` ішінде `OPENAI_API_KEY`, `OPENAI_MODEL=gpt-4.1-mini`, `ASSISTANT_LLM_ENABLED=true` баптаңыз. API кілтін frontend-ке бермеңіз. Word/PDF адаптерлері мен JPEG/OCR интерфейсі кейінгі файл енгізуіне дайындалған; чат upload endpoint-і әлі ашылмаған.
+
+Толық API/растау мысалдары, миграция, тесттер және ескі `ai/` файлдарын қауіпсіз тазарту тізімі: [ASSISTANT_MIGRATION.md](../ASSISTANT_MIGRATION.md).
 
 ## Белгілі шектеулер
 

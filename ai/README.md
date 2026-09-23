@@ -1,5 +1,16 @@
 # EKT AI service
 
+> **RETIRED — migration reference only.** The only supported server is now
+> `../backend`, with `POST /api/assistant/chat`. Useful assistant logic has been
+> migrated to `backend/src/modules/assistant/` in JavaScript/CommonJS and tested
+> against the existing PostgreSQL/Prisma/cart services. Startup, build and legacy
+> migration commands here are intentionally disabled. Nothing in this directory
+> is imported by the main backend. Do not execute the archived instructions below.
+> See [ASSISTANT_MIGRATION.md](../ASSISTANT_MIGRATION.md) for the migration map,
+> verification, supported scope and files that can be removed after your review.
+
+## Archived documentation (not the current architecture)
+
 Backend for a safe bilingual commerce assistant for EKT electrical products. It searches a catalog, retrieves city-aware price/stock/certificates, ranks compatible analogs, processes specifications, and prepares cart changes — without allowing a model to mutate a cart or invent commercial facts.
 
 ## Architecture

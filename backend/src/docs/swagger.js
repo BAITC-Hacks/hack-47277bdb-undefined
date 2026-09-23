@@ -3,6 +3,7 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const { schemas, ref } = require('./schemas');
 const { paths } = require('./paths');
+const assistantDocs = require('./assistant');
 
 const errors = {
   400: ['Invalid JSON or missing guest session.', 'SESSION_ID_REQUIRED', 'Қонақ сұрауы үшін X-Session-Id тақырыбы қажет'],
@@ -38,7 +39,7 @@ const swaggerSpec = swaggerJsdoc({
       'Health', 'Authentication', 'Cities', 'Branches', 'Categories', 'Brands',
       'Products', 'Catalog', 'Favorites', 'Comparison', 'Cart', 'One-click orders',
       'Orders', 'Content', 'Customer requests', 'Admin products', 'Admin orders',
-      'Admin requests', 'Uploads',
+      'Admin requests', 'Uploads', 'Assistant',
     ].map((name) => ({ name })),
     security: [],
     components: {
@@ -46,10 +47,10 @@ const swaggerSpec = swaggerJsdoc({
         bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'JWT returned by register/login. Enter the token without the Bearer prefix.' },
         guestSession: { type: 'apiKey', in: 'header', name: 'X-Session-Id', description: 'Client-generated random UUID, kept private and reused for the same guest session. Alternative to bearerAuth on cart/comparison/checkout only.' },
       },
-      schemas,
+      schemas: { ...schemas, ...assistantDocs.schemas },
       responses: Object.fromEntries(Object.entries(errors).map(([status, [description, code, message]]) => [`Error${status}`, { description, content: { 'application/json': { schema: ref('Error'), example: { success: false, error: { code, message, ...(status === '409' ? { details: { requested: 100, available: 23 } } : {}) } } } } }])),
     },
-    paths,
+    paths: { ...paths, ...assistantDocs.paths },
   },
   // Definitions live in explicit CommonJS modules so schemas and response helpers
   // stay reusable. swagger-jsdoc validates/normalizes the assembled OpenAPI document.

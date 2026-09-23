@@ -105,6 +105,7 @@ model User {
   comparisonItems ComparisonItem[]
   cart            Cart?
   orders          Order[]
+  assistantConversations AssistantConversation[]
 }
 
 model City {
@@ -581,4 +582,49 @@ model CustomerRequest {
   @@index([type])
   @@index([status])
   @@index([createdAt])
+}
+
+// Assistant-only state. Catalog, stock and cart stay in their existing models.
+model AssistantConversation {
+  id                String   @id @default(uuid()) @db.Uuid
+  ownerKey          String
+  sessionId         String   @db.Uuid
+  userId            String?  @db.Uuid
+  language          String   @default("kk")
+  citySlug          String?
+  selectedProductId String?  @db.Uuid
+  recentProductIds  Json     @default("[]")
+  history           Json     @default("[]")
+  revision          Int      @default(0)
+  expiresAt         DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user    User?                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actions AssistantPendingAction[]
+
+  @@unique([ownerKey, sessionId])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AssistantPendingAction {
+  id              String   @id @default(uuid()) @db.Uuid
+  conversationId  String   @db.Uuid
+  status          String   @default("PENDING")
+  productId       String   @db.Uuid
+  quantity        Int
+  cityId          String   @db.Uuid
+  citySlug        String
+  unitPrice       Decimal  @db.Decimal(14, 2)
+  productName     String
+  cartFingerprint String
+  expiresAt       DateTime
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, status])
+  @@index([expiresAt])
 }

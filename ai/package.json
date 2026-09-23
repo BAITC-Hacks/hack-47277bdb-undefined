@@ -2,17 +2,17 @@
   "name": "ekt-ai-service",
   "version": "0.1.0",
   "private": true,
-  "description": "Safe, tool-driven commerce assistant API for EKT",
+  "description": "Retired migration reference only. The assistant runs inside ../backend.",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=.env --import tsx --watch src/server.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node --env-file-if-exists=.env dist/server.js",
-    "db:migrate": "node --env-file-if-exists=.env --import tsx src/database/migrate.ts",
-    "db:migrate:prod": "node --env-file-if-exists=.env dist/database/migrate.js",
+    "dev": "node legacy-disabled.cjs",
+    "build": "node legacy-disabled.cjs",
+    "start": "node legacy-disabled.cjs",
+    "db:migrate": "node legacy-disabled.cjs",
+    "db:migrate:prod": "node legacy-disabled.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src tests --max-warnings=0",

@@ -33,6 +33,7 @@ const requestRoutes = require('./modules/requests/request.routes');
 const uploadRoutes = require('./modules/uploads/upload.routes');
 const uploadAdminRoutes = require('./modules/uploads/upload.admin.routes');
 const adminRoutes = require('./modules/admin/admin.routes');
+const assistantRoutes = require('./modules/assistant/assistant.routes');
 
 const app = express();
 const allowedOrigins = new Set([
@@ -84,6 +85,7 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/admin/uploads', uploadAdminRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/assistant', assistantRoutes);
 
 app.get('/api-docs.json', (req, res) => res.json(swaggerSpec));
 app.use('/api-docs', swaggerRouter);

@@ -49,4 +49,17 @@ npm run check:integration
 
 Маршруттар, сәйкессіздіктер, түзетулер, тесттер және шектеулер: [INTEGRATION_REPORT.md](INTEGRATION_REPORT.md). Қосымша backend контракт: [INTEGRATION_API_CONTRACT.md](INTEGRATION_API_CONTRACT.md).
 
-AI/image search және төлем провайдері қосылмаған. Қонақ себеті аккаунт себетімен автоматты біріктірілмейді. Толық визуалды smoke test-ті браузерде қолмен өткізіңіз.
+Төлем провайдері қосылмаған. Қонақ себеті аккаунт себетімен автоматты біріктірілмейді. Толық визуалды smoke test-ті браузерде қолмен өткізіңіз.
+
+## Ассистент — бір backend ішінде
+
+Ассистент енді `backend/src/modules/assistant/` ішінде: `POST /api/assistant/chat`.
+Оған бөлек сервер, порт, PostgreSQL немесе каталог/себет адаптері керек емес.
+`ai/` — сақталған архив; оның server/migration командалары өшірілген, буманың өзі өшірілмеді.
+
+Жаңа checkout-та backend бумасында `npx prisma migrate deploy`, содан кейін серверді тоқтатып `npm run prisma:generate` орындаңыз. Бұл тек екі ассистент кестесін қосады; база reset қажет емес. Осы компьютерде migration қолданылды.
+
+Backend іске қосылғанда `npm run check:assistant` нақты HTTP сценарийін тексереді.
+Қазақша ассистент кілтсіз жұмыс істейді. Қосымша LLM жіктеуін қосу үшін тек backend `.env` ішінде `OPENAI_API_KEY`, `OPENAI_MODEL` және `ASSISTANT_LLM_ENABLED=true` баптаңыз. Кілтті frontend-ке бермеңіз. Бұл рефакторда frontend чат UI қосылған жоқ.
+
+Архитектура, қауіпсіз растау, API мысалдары, файлдарды өңдеу шектері және ескі кодты тазарту: [ASSISTANT_MIGRATION.md](ASSISTANT_MIGRATION.md).

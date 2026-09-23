@@ -140,8 +140,17 @@ const validateCartQuantity = async (productId, cityId, quantity, db = prisma) =>
   return { product, offer, available };
 };
 
-const addItem = (identity, { productId, quantity }, language) => serializable(async (tx) => {
-  const cart = await ensureCart(identity, undefined, tx);
+// The caller owns the transaction. Assistant confirmation uses this same logic
+// so consuming a pending action and changing its cart commit (or roll back) together.
+const addItemInTransaction = async (identity, { productId, quantity }, language, tx, { cityId } = {}) => {
+  if (!tx) throw new TypeError('addItemInTransaction requires the caller transaction');
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10000) {
+    throw new ApiError(422, 'INVALID_QUANTITY', 'quantity 1–10000 аралығындағы бүтін сан болуы керек');
+  }
+  const cart = await ensureCart(identity, cityId, tx);
+  if (cityId && cart.cityId !== cityId) {
+    throw new ApiError(409, 'CART_CITY_MISMATCH', 'Себет қаласы өзгерді. Қаланы сәйкестендіріп, ұсынысты қайта дайындаңыз');
+  }
   const existing = await tx.cartItem.findUnique({
     where: { cartId_productId: { cartId: cart.id, productId } },
   });
@@ -153,7 +162,10 @@ const addItem = (identity, { productId, quantity }, language) => serializable(as
     update: { quantity: requestedQuantity },
   });
   return getCart(identity, language, tx);
-});
+};
+
+const addItem = (identity, payload, language) =>
+  serializable((tx) => addItemInTransaction(identity, payload, language, tx));
 
 const updateItem = (identity, itemId, quantity, language) => serializable(async (tx) => {
   const cart = await tx.cart.findFirst({ where: ownerWhere(identity) });
@@ -191,6 +203,7 @@ module.exports = {
   serializeCart,
   ensureCart,
   validateCartQuantity,
+  addItemInTransaction,
   addItem,
   updateItem,
   removeItem,

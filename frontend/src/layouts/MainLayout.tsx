@@ -8,7 +8,7 @@ import { ErrorMessage, LoadingSpinner, useApiResource } from "../components/comm
 import { formatPrice } from "../utils/format";
 
 export function MainLayout() {
-  const navigate = useNavigate(); const [query, setQuery] = useState(""); const [open, setOpen] = useState(false); const [assistantOpen, setAssistantOpen] = useState(false); const [changingCity, setChangingCity] = useState(false); const [notice, setNotice] = useState("");
+  const navigate = useNavigate(); const [query, setQuery] = useState(""); const [open, setOpen] = useState(false); const [assistantOpen, setAssistantOpen] = useState(true); const [changingCity, setChangingCity] = useState(false); const [notice, setNotice] = useState("");
   const cityContext = useCity(); const { city, cities, setCity } = cityContext; const { language, setLanguage } = useLanguage(); const cartContext = useCart(); const { cart } = cartContext; const saved = useSaved(); const auth = useAuth();
   const categories = useApiResource(() => categoriesApi.tree(), [language]);
   const submit = (event: FormEvent) => { event.preventDefault(); if (query.trim()) { setOpen(false); navigate(`/search?q=${encodeURIComponent(query.trim())}`); } };

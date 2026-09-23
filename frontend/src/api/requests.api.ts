@@ -1,0 +1,1 @@
+import apiClient,{requestData}from"./client"; export const requestsApi={create:(payload:Record<string,unknown>)=>requestData<void>(apiClient.post("/requests",payload)),imageSearch:(file:FormData)=>requestData<unknown>(apiClient.post("/search/image",file))};

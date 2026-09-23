@@ -1,0 +1,1 @@
+export function LoadingSpinner(){return <p role="status">Жүктелуде…</p>} export function ErrorMessage({message}:{message:string}){return <p role="alert">{message}</p>} export function EmptyState({message}:{message:string}){return <p>{message}</p>}
